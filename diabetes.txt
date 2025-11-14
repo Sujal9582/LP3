@@ -1,0 +1,119 @@
+
+
+# ===============================
+# K-Nearest Neighbors on Diabetes Dataset
+# ===============================
+
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, classification_report
+
+# -------------------------------
+# Load Dataset
+# -------------------------------
+# Replace file path below with your actual diabetes.csv path
+df = pd.read_csv(r"diabetes.csv")
+
+print("First 5 rows:\n", df.head())
+print("\nDataset Info:\n")
+print(df.info())
+print("\nMissing values:\n", df.isnull().sum())
+
+# Drop missing values if any
+df = df.dropna()
+print("\nAfter dropping missing values, shape:", df.shape)
+
+# -------------------------------
+# Features and Target
+# -------------------------------
+X = df.drop("Outcome", axis=1)
+y = df["Outcome"]
+
+# -------------------------------
+# Feature Scaling
+# -------------------------------
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# -------------------------------
+# Train-Test Split
+# -------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.25, random_state=42, stratify=y
+)
+
+# -------------------------------
+# Train KNN Model (Initial K = 5)
+# -------------------------------
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+y_pred = knn.predict(X_test)
+
+# -------------------------------
+# Evaluation Metrics
+# -------------------------------
+cm = confusion_matrix(y_test, y_pred)
+accuracy = accuracy_score(y_test, y_pred)
+error_rate = 1 - accuracy
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+
+print("\n=================== RESULTS ===================")
+print("\nCONFUSION MATRIX:\n", cm)
+print("\nAccuracy:", round(accuracy, 4))
+print("Error Rate:", round(error_rate, 4))
+print("Precision:", round(precision, 4))
+print("Recall:", round(recall, 4))
+print("\nCLASSIFICATION REPORT:\n", classification_report(y_test, y_pred))
+
+# -------------------------------
+# Actual vs Predicted Comparison
+# -------------------------------
+comparison = pd.DataFrame({"Actual": y_test.values, "Predicted": y_pred})
+print("\nACTUAL vs PREDICTED (First 15 Rows):\n")
+print(comparison.head(15))
+
+# -------------------------------
+# Find Optimal K
+# -------------------------------
+accuracy_list = []
+k_range = range(1, 21, 2)  # odd K values
+
+for k in k_range:
+    model = KNeighborsClassifier(n_neighbors=k)
+    model.fit(X_train, y_train)
+    y_k = model.predict(X_test)
+    accuracy_list.append(accuracy_score(y_test, y_k))
+
+optimal_k = k_range[np.argmax(accuracy_list)]
+print("\nOptimal K:", optimal_k)
+print("Highest Accuracy:", round(max(accuracy_list), 4))
+
+# -------------------------------
+# Plot K vs Accuracy
+# -------------------------------
+plt.figure(figsize=(8,5))
+plt.plot(k_range, accuracy_list, marker='o', linestyle='--', color='b')
+plt.title("K Value vs Accuracy")
+plt.xlabel("K Value")
+plt.ylabel("Accuracy")
+plt.xticks(k_range)
+plt.grid(True)
+plt.show()
+
+# -------------------------------
+# Confusion Matrix Heatmap
+# -------------------------------
+plt.figure(figsize=(6,4))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False)
+plt.title("KNN Confusion Matrix - Diabetes Prediction (K=5)")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+     
